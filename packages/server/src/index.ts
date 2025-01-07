@@ -1,18 +1,16 @@
+import 'source-map-support/register';
 import type * as winston from "winston";
 import { ApolloServer } from "@apollo/server";
-import { startStandaloneServer } from "@apollo/server/standalone";
-import {
-  ApolloServerErrorCode,
-  unwrapResolverError,
-} from "@apollo/server/errors";
+import { expressMiddleware } from '@apollo/server/express4';
 import { typeDefs, resolvers, type AppContext } from "@delivery-tracker/api";
 import {
   DefaultCarrierRegistry,
   logger as coreLogger,
 } from "@delivery-tracker/core";
 import { initLogger } from "./logger";
-import type { StandaloneServerContextFunctionArgument } from '@apollo/server/dist/esm/standalone';
-import * as http from 'http';
+import express from 'express';
+import http from 'http';
+import cors from 'cors';
 
 const serverRootLogger: winston.Logger = coreLogger.rootLogger.child({
   module: "server",
@@ -20,21 +18,14 @@ const serverRootLogger: winston.Logger = coreLogger.rootLogger.child({
 
 serverRootLogger.info("Starting server initialization");
 
-// Create a separate HTTP server for health checks
-const healthServer = http.createServer((req, res) => {
-  if (req.url === '/') {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('OK');
-    serverRootLogger.debug("Health check request received");
-  } else {
-    res.writeHead(404);
-    res.end();
-  }
-});
+const app = express();
+app.use(express.json());
+app.use(cors());
 
-const port = Number(process.env.PORT) || 4000;
-healthServer.listen(port, '0.0.0.0', () => {
-  serverRootLogger.info(`Health check server listening on port ${port}`);
+// Health check endpoint
+app.get('/', (req, res) => {
+  res.status(200).send('OK');
+  serverRootLogger.debug("Health check request received");
 });
 
 const server = new ApolloServer<{ appContext: AppContext }>({
@@ -46,26 +37,7 @@ const server = new ApolloServer<{ appContext: AppContext }>({
       case "INTERNAL":
       case "BAD_REQUEST":
       case "NOT_FOUND":
-      case ApolloServerErrorCode.INTERNAL_SERVER_ERROR:
         extensions.code = "INTERNAL";
-        break;
-      case ApolloServerErrorCode.GRAPHQL_PARSE_FAILED:
-        extensions.code = "BAD_REQUEST";
-        break;
-      case ApolloServerErrorCode.GRAPHQL_VALIDATION_FAILED:
-        extensions.code = "BAD_REQUEST";
-        break;
-      case ApolloServerErrorCode.PERSISTED_QUERY_NOT_FOUND:
-        extensions.code = "BAD_REQUEST";
-        break;
-      case ApolloServerErrorCode.PERSISTED_QUERY_NOT_SUPPORTED:
-        extensions.code = "BAD_REQUEST";
-        break;
-      case ApolloServerErrorCode.BAD_USER_INPUT:
-        extensions.code = "BAD_REQUEST";
-        break;
-      case ApolloServerErrorCode.OPERATION_RESOLUTION_FAILURE:
-        extensions.code = "BAD_REQUEST";
         break;
       default:
         extensions.code = "INTERNAL";
@@ -75,7 +47,7 @@ const server = new ApolloServer<{ appContext: AppContext }>({
     if (extensions.code === "INTERNAL") {
       serverRootLogger.error("internal error response", {
         formattedError,
-        error: unwrapResolverError(error),
+        error,
       });
     }
 
@@ -101,17 +73,23 @@ async function main(): Promise<void> {
       carrierRegistry,
     };
 
-    serverRootLogger.info(`Attempting to start Apollo Server on port ${port + 1}`);
+    await server.start();
+    serverRootLogger.info("Apollo Server started");
 
-    const { url } = await startStandaloneServer(server, {
-      context: async (contextArg: StandaloneServerContextFunctionArgument) => {
-        serverRootLogger.debug("Processing GraphQL request", { headers: contextArg.req.headers });
+    // GraphQL endpoint
+    app.use('/graphql', expressMiddleware(server, {
+      context: async ({ req }) => {
+        serverRootLogger.debug("Processing GraphQL request", { headers: req.headers });
         return { appContext };
       },
-      listen: { port: port + 1, host: '0.0.0.0' }
-    });
+    }));
+
+    const port = Number(process.env.PORT) || 4000;
+    const httpServer = http.createServer(app);
     
-    serverRootLogger.info(`🚀 GraphQL Server ready at ${url}`);
+    await new Promise<void>((resolve) => httpServer.listen({ port }, resolve));
+    serverRootLogger.info(`🚀 Server ready at http://0.0.0.0:${port}`);
+    serverRootLogger.info(`🚀 GraphQL endpoint available at http://0.0.0.0:${port}/graphql`);
   } catch (err) {
     serverRootLogger.error("Failed to start server", { error: err });
     throw err;

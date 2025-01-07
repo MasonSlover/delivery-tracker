@@ -16,12 +16,14 @@
     "@delivery-tracker/core": "workspace:*",
     "express": "^4.18.2",
     "luxon": "^3.4.0",
+    "source-map-support": "^0.5.21",
     "winston": "^3.8.2"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
     "@types/luxon": "^3.3.1",
     "@types/node": "^18.16.0",
+    "@types/source-map-support": "^0.5.10",
     "@types/winston": "^2.4.4",
     "node-dev": "^8.0.0",
     "ts-node": "^10.9.1"

@@ -41,4 +41,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:4000/ || exit 1
 
 EXPOSE 4000
-CMD ["sh", "-c", "node -r source-map-support/register dist/index.js"]
+CMD ["node", "dist/index.js"]
