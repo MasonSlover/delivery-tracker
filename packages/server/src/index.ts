@@ -11,15 +11,18 @@ import {
   logger as coreLogger,
 } from "@delivery-tracker/core";
 import { initLogger } from "./logger";
+import type { StandaloneServerContextFunctionArgument } from '@apollo/server/dist/esm/standalone';
 
 const serverRootLogger: winston.Logger = coreLogger.rootLogger.child({
   module: "server",
 });
 
-const server = new ApolloServer({
+serverRootLogger.info("Starting server initialization");
+
+const server = new ApolloServer<{ appContext: AppContext }>({
   typeDefs,
   resolvers: resolvers.resolvers,
-  formatError: (formattedError, error) => {
+  formatError: (formattedError: any, error: unknown) => {
     const extensions = formattedError.extensions ?? {};
     switch (extensions.code) {
       case "INTERNAL":
@@ -70,24 +73,63 @@ const server = new ApolloServer({
 });
 
 async function main(): Promise<void> {
-  const carrierRegistry = new DefaultCarrierRegistry();
-  await carrierRegistry.init();
+  try {
+    serverRootLogger.info("Initializing carrier registry");
+    const carrierRegistry = new DefaultCarrierRegistry();
+    await carrierRegistry.init();
+    serverRootLogger.info("Carrier registry initialized successfully");
 
-  const appContext: AppContext = {
-    carrierRegistry,
-  };
+    const appContext: AppContext = {
+      carrierRegistry,
+    };
 
-  const { url } = await startStandaloneServer(server, {
-    context: async ({ req, res }) => ({
-      appContext,
-    }),
-  });
-  serverRootLogger.info(`🚀 Server ready at ${url}`);
+    const port = Number(process.env.PORT) || 3000;
+    serverRootLogger.info(`Attempting to start server on port ${port}`);
+
+    const { url } = await startStandaloneServer(server, {
+      context: async (contextArg: StandaloneServerContextFunctionArgument) => {
+        serverRootLogger.debug("Processing GraphQL request", { headers: contextArg.req.headers });
+        return { appContext };
+      },
+      listen: { port, host: '0.0.0.0' }
+    });
+    
+    serverRootLogger.info(`🚀 Server ready at ${url}`);
+    
+    // Add basic health endpoint
+    const http = require('http');
+    http.createServer((req: any, res: any) => {
+      if (req.url === '/') {
+        res.writeHead(200);
+        res.end('OK');
+      }
+    }).listen(port + 1);
+    serverRootLogger.info(`Health check endpoint listening on port ${port + 1}`);
+  } catch (err) {
+    serverRootLogger.error("Failed to start server", { error: err });
+    throw err;
+  }
 }
 
+process.on('unhandledRejection', (reason, promise) => {
+  serverRootLogger.error('Unhandled Rejection at:', {
+    promise,
+    reason,
+  });
+});
+
+process.on('uncaughtException', (error) => {
+  serverRootLogger.error('Uncaught Exception:', {
+    error,
+  });
+});
+
 initLogger();
+serverRootLogger.info("Logger initialized");
+
 main().catch((err) => {
-  serverRootLogger.error("Uncaught error", {
+  serverRootLogger.error("Uncaught error in main", {
     error: err,
   });
+  process.exit(1);
 });

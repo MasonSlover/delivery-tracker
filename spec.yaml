@@ -1,0 +1,22 @@
+name: delivery-tracker
+region: nyc
+services:
+  - name: delivery-tracker-web
+    git:
+      branch: main
+      repo_clone_url: https://github.com/MasonSlover/delivery-tracker
+    dockerfile_path: Dockerfile
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    http_port: 4000
+    routes:
+      - path: /
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "4000"
+    health_check:
+      http_path: /
+      port: 4000
+      initial_delay_seconds: 10 
