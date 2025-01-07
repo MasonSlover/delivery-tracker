@@ -158,16 +158,25 @@ importers:
       '@delivery-tracker/core':
         specifier: workspace:*
         version: link:../core
+      cors:
+        specifier: ^2.8.5
+        version: 2.8.5
       express:
         specifier: ^4.18.2
         version: 4.18.2
       luxon:
         specifier: ^3.4.0
         version: 3.4.0
+      source-map-support:
+        specifier: ^0.5.21
+        version: 0.5.21
       winston:
         specifier: ^3.8.2
         version: 3.8.2
     devDependencies:
+      '@types/cors':
+        specifier: ^2.8.17
+        version: 2.8.17
       '@types/express':
         specifier: ^4.17.21
         version: 4.17.21
@@ -177,6 +186,9 @@ importers:
       '@types/node':
         specifier: ^18.16.0
         version: 18.16.0
+      '@types/source-map-support':
+        specifier: ^0.5.10
+        version: 0.5.10
       '@types/winston':
         specifier: ^2.4.4
         version: 2.4.4
@@ -1218,6 +1230,9 @@ packages:
   '@types/connect@3.4.35':
     resolution: {integrity: sha512-cdeYyv4KWoEgpBISTxWvqYsVy444DOqehiF3fM3ne10AmJ62RSyNkUnxMJXHQWRQQX2eR94m5y1IZyDwBjV9FQ==}
 
+  '@types/cors@2.8.17':
+    resolution: {integrity: sha512-8CGDvrBj1zgo2qE+oS3pOCyYNqCPryMWY2bGfwA0dcfopWGgxs+78df0Rs3rc9THP4JkOhLsAa+15VdpAqkcUA==}
+
   '@types/express-serve-static-core@4.17.33':
     resolution: {integrity: sha512-TPBqmR/HRYI3eC2E5hmiivIzv+bidAfXofM+sbonAGvyDhySGw9/PQZFt2BLOrjUUR++4eJVpx6KnLQK1Fk9tA==}
 
@@ -1274,6 +1289,9 @@ packages:
 
   '@types/serve-static@1.15.1':
     resolution: {integrity: sha512-NUo5XNiAdULrJENtJXZZ3fHtfMolzZwczzBbnAeBbqBwG+LaG6YaJtuwzwGSQZ2wsCrxjEhNNjAkKigy3n8teQ==}
+
+  '@types/source-map-support@0.5.10':
+    resolution: {integrity: sha512-tgVP2H469x9zq34Z0m/fgPewGhg/MLClalNOiPIzQlXrSS2YrKu/xCdSCKnEDwkFha51VKEKB6A9wW26/ZNwzA==}
 
   '@types/stack-utils@2.0.1':
     resolution: {integrity: sha512-Hl219/BT5fLAaz6NDkSuhzasy49dwQS/DSdu4MdggFB8zcXv7vflBI3xp7FEmkmdDkBUI2bPUNeMttp2knYdxw==}
@@ -3552,6 +3570,9 @@ packages:
   source-map-support@0.5.13:
     resolution: {integrity: sha512-SHSKFHadjVA5oR4PPqhtAVdcBWwRYVd6g6cAXnIbRiIwc2EhPrTuKUBdSLvlEKyIP3GCf89fltvcZiP9MMFA1w==}
 
+  source-map-support@0.5.21:
+    resolution: {integrity: sha512-uBHU3L3czsIyYXKX88fdrGovxdSCoTGDRZ6SYXtSRxLZUzHg5P/66Ht6uoUlHu9EZod+inXhKo3qQgwXUT/y1w==}
+
   source-map@0.6.1:
     resolution: {integrity: sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==}
     engines: {node: '>=0.10.0'}
@@ -5588,6 +5609,10 @@ snapshots:
     dependencies:
       '@types/node': 18.16.0
 
+  '@types/cors@2.8.17':
+    dependencies:
+      '@types/node': 18.16.0
+
   '@types/express-serve-static-core@4.17.33':
     dependencies:
       '@types/node': 18.16.0
@@ -5650,6 +5675,10 @@ snapshots:
     dependencies:
       '@types/mime': 3.0.1
       '@types/node': 18.16.0
+
+  '@types/source-map-support@0.5.10':
+    dependencies:
+      source-map: 0.6.1
 
   '@types/stack-utils@2.0.1': {}
 
@@ -8366,6 +8395,11 @@ snapshots:
       tslib: 2.5.0
 
   source-map-support@0.5.13:
+    dependencies:
+      buffer-from: 1.1.2
+      source-map: 0.6.1
+
+  source-map-support@0.5.21:
     dependencies:
       buffer-from: 1.1.2
       source-map: 0.6.1
