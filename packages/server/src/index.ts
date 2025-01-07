@@ -12,12 +12,30 @@ import {
 } from "@delivery-tracker/core";
 import { initLogger } from "./logger";
 import type { StandaloneServerContextFunctionArgument } from '@apollo/server/dist/esm/standalone';
+import * as http from 'http';
 
 const serverRootLogger: winston.Logger = coreLogger.rootLogger.child({
   module: "server",
 });
 
 serverRootLogger.info("Starting server initialization");
+
+// Create a separate HTTP server for health checks
+const healthServer = http.createServer((req, res) => {
+  if (req.url === '/') {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('OK');
+    serverRootLogger.debug("Health check request received");
+  } else {
+    res.writeHead(404);
+    res.end();
+  }
+});
+
+const port = Number(process.env.PORT) || 4000;
+healthServer.listen(port, '0.0.0.0', () => {
+  serverRootLogger.info(`Health check server listening on port ${port}`);
+});
 
 const server = new ApolloServer<{ appContext: AppContext }>({
   typeDefs,
@@ -83,28 +101,17 @@ async function main(): Promise<void> {
       carrierRegistry,
     };
 
-    const port = Number(process.env.PORT) || 3000;
-    serverRootLogger.info(`Attempting to start server on port ${port}`);
+    serverRootLogger.info(`Attempting to start Apollo Server on port ${port + 1}`);
 
     const { url } = await startStandaloneServer(server, {
       context: async (contextArg: StandaloneServerContextFunctionArgument) => {
         serverRootLogger.debug("Processing GraphQL request", { headers: contextArg.req.headers });
         return { appContext };
       },
-      listen: { port, host: '0.0.0.0' }
+      listen: { port: port + 1, host: '0.0.0.0' }
     });
     
-    serverRootLogger.info(`🚀 Server ready at ${url}`);
-    
-    // Add basic health endpoint
-    const http = require('http');
-    http.createServer((req: any, res: any) => {
-      if (req.url === '/') {
-        res.writeHead(200);
-        res.end('OK');
-      }
-    }).listen(port + 1);
-    serverRootLogger.info(`Health check endpoint listening on port ${port + 1}`);
+    serverRootLogger.info(`🚀 GraphQL Server ready at ${url}`);
   } catch (err) {
     serverRootLogger.error("Failed to start server", { error: err });
     throw err;
